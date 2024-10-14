@@ -11,6 +11,7 @@ import { LayoutContext } from '../../layout/context/layoutcontext';
 import Link from 'next/link';
 import { Demo } from '@/types';
 import { ChartData, ChartOptions } from 'chart.js';
+import axios from 'axios';
 
 const lineData: ChartData = {
     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
@@ -125,9 +126,29 @@ const Dashboard = () => {
         });
     };
 
+    const getAllSubscriptions = async () => {
+        try {
+            const response = await axios.get(`https://ini6.in/api/v1/subscription/get`);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                console.log('Success', response.data.message);
+                setProducts(response.data.data);
+                setCount(response.data.data.length);
+            }
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+        }
+    };
+
     useEffect(() => {
-        ProductService.getProducts().then((data) => setCount(data.length as any));
+        getAllSubscriptions();
     }, []);
+
 
     return (
         <div className="grid">

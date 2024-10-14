@@ -12,6 +12,7 @@ import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { ProductService } from '../../../../demo/service/ProductService';
 import { Demo } from '@/types';
+import axios from 'axios';
 
 /* @todo Used 'as any' for types here. Will fix in next version due to onSelectionChange event type issue. */
 const Subscription = () => {
@@ -36,8 +37,103 @@ const Subscription = () => {
     const toast = useRef<Toast>(null);
     const dt = useRef<DataTable<any>>(null);
 
+    const deleteConfirmation = async (id: any) => {
+        try {
+            const response = await axios.delete(`https://ini6.in/api/v1/subscription/delete/${id}`);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                getAllSubscriptions();
+                console.log('Success', response.data.message);
+            }
+            return true; // Deletion successful
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+            return false; // Deletion failed
+        }
+    };
+
+    const bulkDeleteConfirmation = async (ids: any) => {
+        try {
+            const body = {ids}
+            const response = await axios.post(`https://ini6.in/api/v1/subscription/bulk/delete`, body);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                getAllSubscriptions();
+                console.log('Success', response.data.message);
+            }
+            return true; // Deletion successful
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+            return false; // Deletion failed
+        }
+    };
+
+    const createSubscription = async (data: any) => {
+        try {
+            const response = await axios.post(`https://ini6.in/api/v1/subscription/create`, data);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                getAllSubscriptions();
+                console.log('Success', response.data.message);
+            }
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+        }
+    };
+
+    const updateSubscription = async (id: any, data: any) => {
+        try {
+            const response = await axios.put(`https://ini6.in/api/v1/subscription/update/${id}`, data);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                getAllSubscriptions();
+                console.log('Success', response.data.message);
+            }
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+        }
+    };
+
+    const getAllSubscriptions = async () => {
+        try {
+            const response = await axios.get(`https://ini6.in/api/v1/subscription/get`);
+            const responseData = await response.data;
+            if (responseData.IsSuccess == true) {
+                console.log('Success', response.data.message);
+                setProducts(response.data.data);
+            }
+        } catch (error: any) {
+            if (error.response) {
+                const errorMessage = error.response.data.message;
+                console.log('Error', errorMessage);
+            } else {
+                console.log('Error', error.message);
+            }
+        }
+    };
+
     useEffect(() => {
-        ProductService.getProducts().then((data) => setProducts(data as any));
+        getAllSubscriptions();
     }, []);
 
     const formatCurrency = (value: number) => {
@@ -66,7 +162,7 @@ const Subscription = () => {
         setDeleteProductsDialog(false);
     };
 
-    const saveProduct = () => {
+    const saveProduct = async () => {
         setSubmitted(true);
 
         if (product.name.trim()) {
@@ -74,7 +170,7 @@ const Subscription = () => {
             let _product = { ...product };
             if (product.id) {
                 const index = findIndexById(product.id);
-
+                await updateSubscription(product._id, _product);
                 _products[index] = _product;
                 toast.current?.show({
                     severity: 'success',
@@ -85,6 +181,7 @@ const Subscription = () => {
             } else {
                 _product.id = createId();
                 _products.push(_product);
+                await createSubscription(_product);
                 toast.current?.show({
                     severity: 'success',
                     summary: 'Successful',
@@ -109,7 +206,8 @@ const Subscription = () => {
         setDeleteProductDialog(true);
     };
 
-    const deleteProduct = () => {
+    const deleteProduct = async () => {
+        await deleteConfirmation(product._id);
         let _products = (products as any)?.filter((val: any) => val.id !== product.id);
         setProducts(_products);
         setDeleteProductDialog(false);
@@ -147,7 +245,9 @@ const Subscription = () => {
         setDeleteProductsDialog(true);
     };
 
-    const deleteSelectedProducts = () => {
+    const deleteSelectedProducts = async () => {
+        const selectedProductIds = (selectedProducts as any).map((product: any) => product._id);
+        await bulkDeleteConfirmation(selectedProductIds);
         let _products = (products as any)?.filter((val: any) => !(selectedProducts as any)?.includes(val));
         setProducts(_products);
         setDeleteProductsDialog(false);
