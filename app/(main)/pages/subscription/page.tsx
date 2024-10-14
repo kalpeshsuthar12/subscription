@@ -26,7 +26,8 @@ const Subscription = () => {
         status: true
     };
 
-    const [products, setProducts] = useState(null);
+    const [products, setProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [productDialog, setProductDialog] = useState(false);
     const [deleteProductDialog, setDeleteProductDialog] = useState(false);
     const [deleteProductsDialog, setDeleteProductsDialog] = useState(false);
@@ -36,6 +37,18 @@ const Subscription = () => {
     const [globalFilter, setGlobalFilter] = useState('');
     const toast = useRef<Toast>(null);
     const dt = useRef<DataTable<any>>(null);
+
+    const handleSearch = (event: any) => {
+        const value = event.target.value.toLowerCase();
+        setGlobalFilter(value);
+
+        // Filter logic
+        const filteredData = products.filter((product: any) => {
+            return product.name.toLowerCase().includes(value) || product.email.toLowerCase().includes(value) || product.phoneNumber.includes(value) || product.startDate.includes(value) || product.amount.toString().includes(value);
+        });
+
+        setFilteredProducts(filteredData);
+    };
 
     const deleteConfirmation = async (id: any) => {
         try {
@@ -59,7 +72,7 @@ const Subscription = () => {
 
     const bulkDeleteConfirmation = async (ids: any) => {
         try {
-            const body = {ids}
+            const body = { ids };
             const response = await axios.post(`https://ini6.in/api/v1/subscription/bulk/delete`, body);
             const responseData = await response.data;
             if (responseData.IsSuccess == true) {
@@ -120,6 +133,7 @@ const Subscription = () => {
             const responseData = await response.data;
             if (responseData.IsSuccess == true) {
                 console.log('Success', response.data.message);
+                setFilteredProducts(response.data.data)
                 setProducts(response.data.data);
             }
         } catch (error: any) {
@@ -355,7 +369,7 @@ const Subscription = () => {
             <h5 className="m-0">Manage Subscriptions</h5>
             <span className="block mt-2 md:mt-0 p-input-icon-left">
                 <i className="pi pi-search" />
-                <InputText type="search" onInput={(e) => setGlobalFilter(e.currentTarget.value)} placeholder="Search..." />
+                <InputText type="search" onChange={handleSearch} placeholder="Search..." />
             </span>
         </div>
     );
@@ -379,6 +393,9 @@ const Subscription = () => {
         </>
     );
 
+    console.log('Products:', products);
+    console.log('Global Filter:', globalFilter);
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -388,7 +405,7 @@ const Subscription = () => {
 
                     <DataTable
                         ref={dt}
-                        value={products}
+                        value={filteredProducts}
                         selection={selectedProducts}
                         onSelectionChange={(e) => setSelectedProducts(e.value as any)}
                         dataKey="id"
@@ -398,7 +415,6 @@ const Subscription = () => {
                         className="datatable-responsive"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
-                        globalFilter={globalFilter}
                         emptyMessage="No Subscription found."
                         header={header}
                         responsiveLayout="scroll"
